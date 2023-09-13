@@ -18,13 +18,51 @@ const AuthForm = () => {
     setIsLoading(true)
     //optional: add validation
     if (isLogin) {
-    } else {
-      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCF_6Se4K8su8XTvm_WAL7etYtBWD35ywY',
+    
+      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCF_6Se4K8su8XTvm_WAL7etYtBWD35ywY',
        { method: "POST",
         body: JSON.stringify({
           email: enteredEmail,
           password: enteredPassword,
           returnedScureToken: true,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((res) => {
+        setIsLoading(false)
+        if (res.ok) {
+          return res.json()
+          //.....
+        } else {
+          return res.json().then((data) => {
+            //show an error model
+            let errorMsg="Authentication failed!";
+           // if(data&&data.error && data.error.message)
+            // {
+             // errorMsg=data.error.message
+           // }
+           
+            throw new Error(errorMsg);
+          });
+        }
+      })
+      .then((data) => {
+        // Handle successful authentication
+        console.log(data);
+      })
+      .catch((err) => {
+        alert(err.message);
+      });
+    }
+
+    else {
+      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCF_6Se4K8su8XTvm_WAL7etYtBWD35ywY',
+       { method: "POST",
+        body: JSON.stringify({
+          email: enteredEmail,
+          password: enteredPassword,
+          returnScureToken: true,
         }),
         headers: {
           "Content-Type": "application/json",
