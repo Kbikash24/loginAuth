@@ -1,88 +1,78 @@
-import { useState, useRef } from "react";
-
+import { useState, useRef, useContext } from "react";
+import AuthContext from "../store/Auth-Context";
 import classes from "./AuthForm.module.css";
 
 const AuthForm = () => {
   const emailInputRef = useRef();
   const passwordInputRef = useRef();
+
+  const AuthCtx = useContext(AuthContext);
+
   const [isLogin, setIsLogin] = useState(true);
-  const [isLoading,setIsLoading]=useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const switchAuthModeHandler = () => {
     setIsLogin((prevState) => !prevState);
   };
-  const submitHandler = (event) => {
+
+  const submitHandler = async (event) => {
     event.preventDefault();
     const enteredEmail = emailInputRef.current.value;
     const enteredPassword = passwordInputRef.current.value;
-    setIsLoading(true)
-    //optional: add validation
+    setIsLoading(true);
+
+    let url;
+    let requestBody = {
+      email: enteredEmail,
+      password: enteredPassword,
+      returnSecureToken: true, // Corrected the spelling of 'returnSecureToken'
+    };
+
     if (isLogin) {
-    
-      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=AIzaSyCF_6Se4K8su8XTvm_WAL7etYtBWD35ywY',
-       { method: "POST",
-        body: JSON.stringify({
-          email: enteredEmail,
-          password: enteredPassword,
-          returnedScureToken: true,
-        }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }).then((res) => {
-        setIsLoading(false)
-        if (res.ok) {
-          return res.json()
-          //.....
-        } else {
-          return res.json().then((data) => {
-            //show an error model
-            let errorMsg="Authentication failed!";
-           // if(data&&data.error && data.error.message)
-            // {
-             // errorMsg=data.error.message
-           // }
-           
-            throw new Error(errorMsg);
-          });
-        }
-      })
-      .then((data) => {
-        // Handle successful authentication
-        console.log(data);
-      })
-      .catch((err) => {
-        alert(err.message);
-      });
+      url =
+        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=YOUR_API_KEY";
+    } else {
+      url =
+        "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=YOUR_API_KEY";
     }
 
-    else {
-      fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCF_6Se4K8su8XTvm_WAL7etYtBWD35ywY',
-       { method: "POST",
-        body: JSON.stringify({
-          email: enteredEmail,
-          password: enteredPassword,
-          returnScureToken: true,
-        }),
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(requestBody),
         headers: {
           "Content-Type": "application/json",
         },
-      }).then((res) => {
-        setIsLoading(false)
-        if (res.ok) {
-          //.....
-        } else {
-          return res.json().then((data) => {
-            //show an error model
-            let errorMsg="Authentication failed!";
-            if(data&&data.error && data.error.message)
-             {errorMsg=data.error.message;}
-            alert(errorMsg);
-          });
-        }
       });
+
+      setIsLoading(false);
+
+      if (!response.ok) {
+        const data = await response.json();
+        let errorMsg = "Authentication failed!";
+
+        if (data && data.error && data.error.message) {
+          errorMsg = data.error.message;
+        }
+
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+
+      // Handle successful authentication
+      console.log(data);
+
+      if (isLogin) {
+        // Handle login
+      } else {
+        AuthCtx.login(data.idToken); // Assuming you have a 'login' function in your AuthContext
+      }
+    } catch (error) {
+      alert(error.message);
     }
   };
+
   return (
     <section className={classes.auth}>
       <h1>{isLogin ? "Login" : "Sign Up"}</h1>
@@ -101,10 +91,8 @@ const AuthForm = () => {
           />
         </div>
         <div className={classes.actions}>
-        {!isLoading&& <button>{isLogin? 'Login':'Create Account'}</button>}
-        {
-          isLoading && <p>Sending Request.....</p>
-        }
+          {!isLoading && <button>{isLogin ? "Login" : "Create Account"}</button>}
+          {isLoading && <p>Sending Request.....</p>}
           <button
             type="button"
             className={classes.toggle}
